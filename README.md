@@ -21,34 +21,41 @@ A NewsAPI key
 
 ## Installation
 
-Clone the repository:git clone https://github.com/AbbuRehan-SD/news-summarizer.git
+1. Clone the repository:
+```
+git clone https://github.com/AbbuRehan-SD/news-summarizer.git
 cd news-summarizer
+```
 
+2. Create a virtual environment and activate it:
+```
+python -m venv venv
+.\venv\Scripts\activate
+```
 
-Create a virtual environment and activate it:python -m venv venv
-.\venv\Scripts\activate  # On Windows
-
-
-Install dependencies:pip install -r requirements.txt
-
+3. Install dependencies:
+```
+pip install -r requirements.txt
+```
 (Note: Create a requirements.txt file with pip freeze > requirements.txt after installing dependencies like flask, requests, python-dotenv, reportlab.)
-Set up environment variables:
+
+4. Set up environment variables:
 Create a .env file in the project root.
-Add your API keys:HF_API_KEY=your_hf_api_key
+Add your API keys:
+```
+HF_API_KEY=your_hf_api_key
 NEWS_API_KEY=your_news_api_key
-
-
-
-
+```
 
 ## Usage
 
-Run the application:python app.py
+1. Run the application:
+```python app.py
+```
 
-
-Open your browser and go to http://127.0.0.1:5000.
-Explore news categories (India, World) or search by keyword.
-Save articles to favorites and export them as needed.
+2. Open your browser and go to http://127.0.0.1:5000.
+3. Explore news categories (India, World) or search by keyword.
+4. Save articles to favorites and export them as needed.
 
 ## Development
 
