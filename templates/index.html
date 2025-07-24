@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>📰 News Summarizer - Enhanced</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f9fafc;
+    }
+    .navbar {
+      background-color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    .card {
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+      cursor: pointer;
+    }
+    .btn-star {
+      float: right;
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      color: gold;
+      cursor: pointer;
+    }
+    .btn-load-more {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 30px;
+      font-weight: 500;
+      border-radius: 30px;
+    }
+    .img-fluid {
+      max-height: 160px;
+      object-fit: cover;
+    }
+    mark {
+      background-color: yellow;
+    }
+    #search-display, #filter-display {
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 5px;
+    }
+    #filter-display-box {
+      margin-top: 15px;
+      background: #fff;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/">📰 News Summarizer</a>
+
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link {% if category == 'India' %}active fw-bold text-primary{% endif %}" href="/india">India</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if category == 'World' %}active fw-bold text-primary{% endif %}" href="/world">🌍 World</a>
+        </li>
+      </ul>
+
+      <form class="d-flex me-3" method="get" action="/search">
+        <input class="form-control me-2" type="search" name="q" id="search-input" placeholder="Search by city/state..." required>
+        <button class="btn btn-outline-primary" type="submit">Search</button>
+      </form>
+      <div id="search-display"></div>
+
+      <form class="d-flex" method="get" action="/world">
+        <select class="form-select me-2" name="query" id="filter-select" onchange="this.form.submit()">
+          <option value="">Filter</option>
+          <option value="technology">Technology</option>
+          <option value="sports">Sports</option>
+          <option value="politics">Politics</option>
+          <option value="business">Business</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="science">Science</option>
+          <option value="health">Health</option>
+        </select>
+      </form>
+      <div id="filter-display"></div>
+
+      <button class="btn btn-outline-dark ms-3" onclick="toggleFavorites()">⭐ Favorites</button>
+    </div>
+  </nav>
+
+  <div class="container my-4">
+    <div id="filter-display-box"></div>
+    <div id="news-container">
+      {% if articles %}
+        {% for article in articles %}
+        <div class="card mb-4 p-3 news-article" data-url="{{ article.url }}">
+          <div class="row g-0">
+            {% if article.image %}
+            <div class="col-md-4">
+              <img src="{{ article.image }}" class="img-fluid rounded-start" loading="lazy" alt="Image">
+            </div>
+            {% endif %}
+            <div class="col-md-8">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <a href="{{ article.url }}" target="_blank">{{ article.title|safe }}</a>
+                  <button class="btn-star" onclick="saveToFavorites(this); event.stopPropagation();">⭐</button>
+                </h5>
+                <p class="card-text"><strong>Summary:</strong> {{ article.summary|safe }}</p>
+                {% if article.sentiment %}
+                <span class="badge {{ 'bg-success' if article.sentiment == 'POSITIVE' else 'bg-danger' if article.sentiment == 'NEGATIVE' else 'bg-secondary' }}">
+                  {{ article.sentiment }}
+                </span>
+                {% endif %}
+                <span class="text-muted float-end">{{ article.source }} - {{ article.published_at }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="alert alert-info text-center">No news found.</div>
+      {% endif %}
+
+      {% if articles %}
+      <form method="get" action="/{{ 'world' if category == 'World' else 'india' if category == 'India' else 'search' }}">
+        <input type="hidden" name="query" value="{{ query }}">
+        <input type="hidden" name="page" value="{{ page + 1 }}">
+        <button type="submit" class="btn btn-outline-primary btn-load-more">Load More</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    const searchInput = document.getElementById('search-input');
+    const searchDisplay = document.getElementById('search-display');
+    searchInput?.addEventListener('input', () => {
+      searchDisplay.textContent = searchInput.value ? `Searching: ${searchInput.value}` : '';
+    });
+
+    const filterSelect = document.getElementById('filter-select');
+    const filterDisplay = document.getElementById('filter-display');
+    filterSelect?.addEventListener('change', () => {
+      filterDisplay.textContent = filterSelect.value ? `Selected filter: ${filterSelect.options[filterSelect.selectedIndex].text}` : '';
+    });
+
+    function saveToFavorites(btn) {
+      const card = btn.closest(".news-article");
+      const url = card.dataset.url;
+      const title = card.querySelector("a").innerText;
+      const summary = card.querySelector(".card-text").innerText;
+      const source = card.querySelector(".text-muted").innerText;
+      const image = card.querySelector("img")?.src || "";
+
+      let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+      if (!favorites.some(fav => fav.url === url)) {
+        favorites.push({ title, summary, source, url, image });
+        localStorage.setItem("favorites", JSON.stringify(favorites));
+        alert("Added to favorites!");
+      }
+    }
+
+    function toggleFavorites() {
+      const container = document.getElementById("news-container");
+      container.innerHTML = "";
+      const favs = JSON.parse(localStorage.getItem("favorites")) || [];
+
+      if (!favs.length) {
+        container.innerHTML = '<div class="alert alert-info text-center">No saved articles yet.</div>';
+      } else {
+        favs.forEach(art => {
+          container.innerHTML += `
+            <div class="card mb-4 p-3">
+              <div class="row g-0 news-article" data-url="${art.url}">
+                ${art.image ? `<div class="col-md-4"><img src="${art.image}" class="img-fluid rounded-start" loading="lazy"></div>` : ''}
+                <div class="col-md-${art.image ? '8' : '12'}">
+                  <div class="card-body">
+                    <h5 class="card-title">
+                      <a href="${art.url}" target="_blank">${art.title}</a>
+                      <button class="btn-star remove-btn" onclick="removeFromFavorites('${art.url}')">🗑</button>
+                    </h5>
+                    <p class="card-text">${art.summary}</p>
+                    <span class="text-muted float-end">${art.source}</span>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        });
+      }
+      container.innerHTML += '<div class="text-center"><a href="/" class="btn btn-outline-secondary mt-3">🔙 Back to News</a></div>';
+    }
+
+    function removeFromFavorites(url) {
+      let favs = JSON.parse(localStorage.getItem("favorites")) || [];
+      favs = favs.filter(a => a.url !== url);
+      localStorage.setItem("favorites", JSON.stringify(favs));
+      toggleFavorites();
+    }
+
+    document.querySelectorAll('.news-article').forEach(card => {
+      card.addEventListener('click', () => {
+        const title = card.querySelector(".card-title a").innerText;
+        const summary = card.querySelector(".card-text").innerText;
+        const source = card.querySelector(".text-muted").innerText;
+        const url = card.dataset.url;
+        const image = card.querySelector("img")?.src || "";
+
+        const filterBox = document.getElementById("filter-display-box");
+        filterBox.innerHTML = `
+          <h5>📌 Selected Article</h5>
+          ${image ? `<img src="${image}" class="img-fluid mb-2" style="max-height: 160px;">` : ''}
+          <p><strong>${title}</strong></p>
+          <p>${summary}</p>
+          <p class="text-muted">${source}</p>
+          <a href="${url}" target="_blank">Read full article</a>
+        `;
+        filterBox.style.display = "block";
+        window.scrollTo({ top: filterBox.offsetTop - 100, behavior: 'smooth' });
+      });
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
